@@ -8,6 +8,7 @@
 @interface SVGGradientElement ()
 
 @property (nonatomic) BOOL hasSynthesizedProperties;
+@property (nonatomic, assign) CGRect oldObjectRect;
 
 @end
 
@@ -132,6 +133,18 @@
 			y1 = [svgY1 pixelsValueWithDimension:1.0]*CGRectGetHeight(objectRect);
 			startPoint = CGPointMake(x1, y1);
 			radius = [svgR pixelsValueWithDimension:1.0]*MIN(CGRectGetWidth(objectRect),CGRectGetHeight(objectRect));
+            
+            // Work around to fix the transform translate in case percentage.
+            CGAffineTransform otherTransform = self.transform;
+            if (CGRectIsEmpty(self.oldObjectRect)) {
+                otherTransform.tx = self.transform.tx * CGRectGetWidth(objectRect);
+                otherTransform.ty = self.transform.ty * CGRectGetHeight(objectRect);
+            } else {
+                otherTransform.tx = self.transform.tx * (CGRectGetWidth(objectRect) / CGRectGetWidth(self.oldObjectRect));
+                otherTransform.ty = self.transform.ty * (CGRectGetHeight(objectRect) / CGRectGetHeight(self.oldObjectRect));
+            }
+            self.oldObjectRect = objectRect;
+            self.transform = otherTransform;
 		}
 		else
 		{
@@ -146,7 +159,7 @@
 		
 		if (inUserSpace)
 		{
-			gradientPoint = CGPointApplyAffineTransform(startPoint, transformAbsolute);
+			gradientPoint = CGPointApplyAffineTransform(gradientPoint, transformAbsolute);
 			
 			gradientPoint.x -= CGRectGetMinX(objectRect);
 			gradientPoint.y -= CGRectGetMinY(objectRect);
